@@ -1,2 +1,3 @@
 test:
-	PYTHONPATH=~/experiments/salt python tests/jinjatest.py
+	PYTHONPATH=~/experiments/salt:~/experiments/jinja2 python tests/jinjatest2.py
+
