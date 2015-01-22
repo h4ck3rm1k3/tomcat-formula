@@ -3,36 +3,12 @@ import salt.renderers.jinja
 class Salt:
 
     class Grains:
+        def __init__(self):
+            self.os="Debian"
         def filter_by(self,x=None, merge=None, c=None):
             print "Filterby",x, merge, c
             return x['Debian']
 
-    # class Opts(object):
-    #     def __init__(self) :
-    #         self.data={
-    #             'file_client': 'remote',
-    #             '0': 'what',
-    #             'transport': 'local',
-    #             'jinja_trim_blocks': False,
-    #             'jinja_lstrip_blocks': False,
-    #             'allow_undefined' :  False,
-    #             'file_roots' : {
-    #                 'base' : "bla"
-    #             }
-    #         }
-    #     def __getitem__(self, x):
-    #         if isinstance(x,int):
-    #             return "What?"
-    #         print "opts get item", x
-    #         if x in self.data:
-    #             return self.data[x]
-    #         else:
-    #             raise Exception("Missing {0}".format(x))
-    #             print "adding", x
-    #             return "unknown"
-    #     def get(self, item, default):
-    #         print "get item", item            
-    #         return self.data[item]
 
     class Pillar:
         def __init__(self):
@@ -61,18 +37,27 @@ class Salt:
 
     pass
 
-#opts=#Salt.Opts() 
-opts={
-    'cachedir' : '/tmp',
-    'file_client': 'remote',
-    'transport': 'local',
-    'jinja_trim_blocks': False,
-    'jinja_lstrip_blocks': False,
-    'allow_undefined' :  False,
-    'file_roots' : {
-        'base' : ["./"]
-    }
-}
+class Opts(object):
+
+    def __init__(self, data) :
+        self.data=data
+    # def keys(self): return self.data.keys()
+    # def has_key(self, key): return key in self.data
+
+    def __getitem__(self, key):
+        if key in self.data:
+            return self.data[key]
+        if hasattr(self.__class__, "__missing__"):
+            return self.__class__.__missing__(self, key)
+        raise KeyError(key)
+
+    def __contains__(self, key):
+        return key in self.data
+
+    def get(self, item, default):
+        print "get item", item            
+        return self.data[item]
+
 grains=Salt.Grains()
 
 pillar=Salt.Pillar()
@@ -86,12 +71,32 @@ salt.renderers.jinja.__salt__={
     'grains.filter_by' : grains.filter_by,
 }
 
-salt.renderers.jinja.__opts__=opts
+
 salt.renderers.jinja.__pillar__=pillar
 salt.renderers.jinja.__grains__=grains
-opts['__pillar']=pillar
+
+opts=Opts({
+    'hash_type': 'md5',
+    'cachedir' : '/tmp',
+    'file_client': 'remote',
+    'transport': 'local',
+    'jinja_trim_blocks': False,
+    'jinja_lstrip_blocks': False,
+    'allow_undefined' :  False,
+    '__pillar':pillar,
+    'file_roots' : {
+        'base' : ["./"]
+    }
+})
+salt.renderers.jinja.__opts__=opts
+
+if 'transport' in opts:
+    ttype = opts['transport']
+
 
 context = {
+    'user':  'someuser',
+    'passwd':  'password',
     'SSLEnabled': True,
     'port': 8080,
     'protocol': 'https',
